@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0f1a">
+<title>Company Vehicle Accident Capture</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="console.log('jsPDF load failed - PDF still usable later')"></script>
+<style>
+:root{--p:#e63946;--pd:#c1121f;--bg:#0f0f1a;--c:#1a1a2e;--t:#f1f1f1;--m:#a0a0b0;--s:#2a9d8f;--b:#2d2d44}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--t);line-height:1.45;padding-bottom:90px;-webkit-tap-highlight-color:transparent}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 16px;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1rem;font-weight:600}
+.step-ind{font-size:.75rem;color:var(--m);background:rgba(255,255,255,.08);padding:3px 10px;border-radius:20px}
+.container{max-width:640px;margin:0 auto;padding:14px}
+.card{background:var(--c);border-radius:14px;padding:18px;margin-bottom:14px;border:1px solid var(--b)}
+.card h2{font-size:1.1rem;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.help{font-size:.88rem;color:var(--m);margin-bottom:14px}
+label{display:block;font-size:.82rem;color:var(--m);margin:12px 0 5px}
+label:first-of-type{margin-top:0}
+input,textarea,select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--b);background:#12121f;color:var(--t);font-size:1rem;-webkit-appearance:none}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--p)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 16px;border-radius:11px;border:none;font-size:.95rem;font-weight:600;cursor:pointer;width:100%;transition:.15s}
+.btn-p{background:var(--p);color:#fff}.btn-p:active{background:var(--pd)}
+.btn-s{background:rgba(255,255,255,.08);color:var(--t);border:1px solid var(--b)}
+.btn-g{background:var(--s);color:#fff}
+.btn-row{display:flex;gap:8px;margin-top:16px}.btn-row .btn{flex:1}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.photo-slot{background:#12121f;border:2px dashed var(--b);border-radius:11px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;position:relative;overflow:hidden}
+.photo-slot.has{border-style:solid;border-color:var(--s)}
+.photo-slot img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.photo-slot .lab{font-size:.72rem;color:var(--m);z-index:1;background:rgba(0,0,0,.65);padding:3px 7px;border-radius:5px}
+.photo-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2}
+.party,.wit{background:#12121f;border-radius:11px;padding:12px;margin-bottom:10px;border:1px solid var(--b)}
+.rm{background:0;border:0;color:var(--p);font-size:.82rem;margin-top:6px;cursor:pointer}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--c);border-top:1px solid var(--b);padding:10px 14px;display:flex;gap:8px;z-index:50}
+.nav .btn{flex:1}
+.hidden{display:none!important}
+.alert{background:rgba(230,57,70,.14);border:1px solid var(--p);border-radius:11px;padding:12px;margin-bottom:14px;font-size:.9rem}
+.ok{color:var(--s)}.rec{color:var(--p);font-weight:600;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.gps{font-size:.82rem;color:var(--m);margin-top:6px}
+.sum h3{font-size:.9rem;color:var(--m);margin:10px 0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Company Vehicle Accident Capture</h1>
+  <div class="step-ind" id="ind">1 / 9</div>
+</header>
+
+<!-- Always-visible jump bar -->
+<div id="jumpBar" style="background:#12121f;border-bottom:1px solid var(--b);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;position:sticky;top:48px;z-index:40;">
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(0)">0 Safety</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(1)">1 Basics</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(2)">2 You</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(3)">3 Photos</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(4)">4 Parties</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(5)">5 Witness</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(6)">6 Desc</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(7)">7 Police/Tow</button>
+  <button type="button" class="btn btn-s" style="width:auto;padding:6px 10px;font-size:0.75rem;" onclick="go(8)">8 Review</button>
+</div>
+
+<div class="container">
+
+
+<!-- 0 Safety -->
+<div id="s0" class="step">
+  <div class="card">
+    <h2>🚨 Safety First</h2>
+    <div class="alert">
+      <strong>Stop. Check safety.</strong><br><br>
+      1. Hazards on<br>
+      2. Check for injuries<br>
+      3. Call <strong>112</strong> if anyone is hurt<br>
+      4. Move vehicles only if safe & legal<br>
+      5. Do <strong>not</strong> admit fault<br><br>
+      <strong>Approved tow contractor for Halfway:</strong><br>
+      Jensen Towing & Services<br>
+      011 792 4444 / 086 511 5422
+    </div>
+    <p class="help">Once everyone is safe, continue. This form guides you step by step.</p>
+    <div class="alert" style="margin-top:12px;background:rgba(42,157,143,0.12);border-color:var(--s);">
+      <strong>Tip – GPS & Microphone</strong><br>
+      For location and voice notes to work on iPhone, open this app from an <strong>HTTPS</strong> link (e.g. upload the file to Netlify Drop). Local/Simple Server (http) usually blocks both.
+    </div>
+    <button class="btn btn-p" id="startBtn" type="button">Everyone is safe – Start</button>
+
+  </div>
+</div>
+
+<!-- 1 Basics -->
+<div id="s1" class="step hidden">
+  <div class="card">
+    <h2>📍 Incident Basics</h2>
+    <p class="help">Date, time and exact location are critical.</p>
+    <label>Date & Time of Accident</label>
+    <input type="datetime-local" id="dt">
+    <label>GPS Location</label>
+    <p class="help" style="margin-bottom:6px;">Needs HTTPS link for auto-capture on iPhone. Otherwise use manual fields below.</p>
+    <button class="btn btn-s" id="gpsBtn" type="button">Capture Current Location</button>
+    <div class="gps" id="gpsSt">Not captured yet</div>
+    <input type="hidden" id="lat"><input type="hidden" id="lng">
+
+    <label>Or enter coordinates manually (if GPS is blocked)</label>
+
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="latManual" placeholder="Latitude e.g. -26.123456" style="flex:1">
+      <input type="text" id="lngManual" placeholder="Longitude e.g. 28.123456" style="flex:1">
+    </div>
+    <button class="btn btn-s" type="button" style="margin-top:8px;" id="useManualBtn">Use these coordinates</button>
+
+    <label>Location Description (street, suburb, landmarks)</label>
+    <textarea id="loc" placeholder="e.g. Cnr William Nicol & Leslie, Fourways"></textarea>
+
+
+    <label>Weather</label>
+    <select id="cond">
+      <option value="">Select...</option>
+      <option>Clear / Dry</option><option>Rain / Wet</option><option>Heavy rain</option>
+      <option>Fog / Poor visibility</option><option>Night / Dark</option><option>Other</option>
+    </select>
+
+    <label>Road incline</label>
+    <select id="incline">
+      <option value="">Select...</option>
+      <option>Flat</option><option>Uphill</option><option>Downhill</option>
+    </select>
+
+    <label>Road surface issues (potholes, etc.)</label>
+    <input type="text" id="surface" placeholder="e.g. Large pothole in left lane, gravel, oil">
+
+    <label>Blind spots / visibility issues</label>
+    <input type="text" id="blind" placeholder="e.g. Trees, parked cars, curve, crest of hill">
+
+    <label>Lighting conditions</label>
+    <select id="lighting">
+      <option value="">Select...</option>
+      <option>Daylight – good</option><option>Daylight – overcast</option>
+      <option>Dawn / Dusk</option><option>Street lights on</option>
+      <option>Dark – poor lighting</option><option>Other</option>
+    </select>
+
+    <label>Overall surroundings</label>
+    <input type="text" id="surround" placeholder="e.g. Busy intersection, residential street, highway, shopping centre">
+
+    <label>Traffic signs / signals involved</label>
+    <input type="text" id="signs" placeholder="e.g. Stop street, robot, yield, no signs">
+
+    <label>Dashcam or CCTV footage available?</label>
+    <select id="footage">
+      <option value="">Select...</option>
+      <option>Yes – own dashcam</option>
+      <option>Yes – other vehicle dashcam</option>
+      <option>Yes – CCTV nearby</option>
+      <option>Possibly – will check</option>
+      <option>No</option>
+    </select>
+    <label>Footage notes (where to get it)</label>
+    <input type="text" id="footageNotes" placeholder="e.g. Own dashcam SD card / Shop name & contact">
+  </div>
+</div>
+
+
+<!-- 2 Your details -->
+<div id="s2" class="step hidden">
+  <div class="card">
+    <h2>👤 Your Details & Vehicle</h2>
+    <label>Full Name</label>
+    <input type="text" id="name" value="Riaan Kotzee">
+    <label>Mobile Number</label>
+    <input type="tel" id="phone" placeholder="082 123 4567">
+    <label>Driver’s Licence Number</label>
+    <input type="text" id="lic">
+    <label>Company Vehicle Registration</label>
+    <input type="text" id="reg" placeholder="GP 123 ABC" style="text-transform:uppercase">
+    <label>Make & Model</label>
+    <input type="text" id="mm" placeholder="Toyota Hilux 2.8 GD-6">
+    <label>Odometer (km)</label>
+    <input type="number" id="odo">
+    <label>Policy / Scottfin reference (if known)</label>
+    <input type="text" id="pol" placeholder="Policy number if available">
+  </div>
+</div>
+
+<!-- 3 Photos -->
+<div id="s3" class="step hidden">
+  <div class="card">
+    <h2>📸 Guided Photos</h2>
+    <p class="help">Clear photos are often the strongest evidence. Fill as many as possible.</p>
+    <div class="photo-grid" id="pgrid"></div>
+  </div>
+</div>
+
+<!-- 4 Other parties -->
+<div id="s4" class="step hidden">
+  <div class="card">
+    <h2>🚗 Other Vehicles / Parties</h2>
+    <p class="help">Capture every other driver (up to 3 total). Call each number now to verify it works.</p>
+    <div id="parties"></div>
+    <button class="btn btn-s" style="margin-top:10px" id="addPartyBtn" onclick="addParty()">+ Add Another Party (optional)</button>
+
+  </div>
+</div>
+
+<!-- 5 Witnesses -->
+<div id="s5" class="step hidden">
+  <div class="card">
+    <h2>👁️ Witnesses</h2>
+    <p class="help">Independent witnesses help a lot. Get name + phone and verify.</p>
+    <div id="wits"></div>
+    <button class="btn btn-s" style="margin-top:10px" onclick="addWit()">+ Add Witness</button>
+  </div>
+</div>
+
+<!-- 6 Description -->
+<div id="s6" class="step hidden">
+  <div class="card">
+    <h2>📝 What Happened</h2>
+    <p class="help">Stick to facts. Avoid opinions about who was at fault.</p>
+    <label>Written Description</label>
+    <textarea id="desc" placeholder="I was travelling north on ... when the other vehicle ..."></textarea>
+    <label>Voice Note (optional)</label>
+    <p class="help" style="margin-bottom:6px;">Needs HTTPS link on iPhone. If blocked, rely on the written description.</p>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-s" id="recBtn" onclick="startRec()">🎤 Start Recording</button>
+      <button class="btn btn-s hidden" id="stopBtn" onclick="stopRec()">⏹ Stop</button>
+    </div>
+    <div class="gps" id="recSt"></div>
+
+    <audio id="play" controls class="hidden" style="width:100%;margin-top:10px"></audio>
+    <input type="hidden" id="voice">
+  </div>
+</div>
+
+<!-- 7 Police & Tow -->
+<div id="s7" class="step hidden">
+  <div class="card">
+    <h2>👮 Police & Internal</h2>
+    <label>Police Station / Traffic Dept</label>
+    <input type="text" id="stn" placeholder="Honeydew SAPS / Fourways Traffic">
+    <label>Accident Report (AR) / Case Number</label>
+    <input type="text" id="case" placeholder="Get this from the officer">
+    <label>Officer Name / Rank</label>
+    <input type="text" id="off">
+    <label>Notified manager / fleet / HR?</label>
+    <select id="not">
+      <option value="">Select...</option>
+      <option>Yes</option><option>Not yet – will do now</option><option>No</option>
+    </select>
+    <label>Person notified / to notify</label>
+    <input type="text" id="notp" placeholder="Name + number">
+    <label>Any injuries?</label>
+    <select id="inj">
+      <option value="">Select...</option>
+      <option>None</option><option>Minor</option><option>Medical attention needed</option><option>Serious / hospital</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <h2>🚛 Tow Truck (Approved: Jensen Towing)</h2>
+    <p class="help">Approved contractor: Jensen Towing & Services – 011 792 4444 / 086 511 5422</p>
+    <label>Tow company used</label>
+    <input type="text" id="towCo" value="Jensen Towing & Services">
+    <label>Tow truck driver name</label>
+    <input type="text" id="towDriver">
+    <label>Tow truck driver phone</label>
+    <input type="tel" id="towPhone">
+    <label>Tow truck registration</label>
+    <input type="text" id="towReg" style="text-transform:uppercase">
+    <label>Where will the vehicle be stored / taken?</label>
+    <input type="text" id="storage" placeholder="e.g. Jensen yard address / Halfway Honeydew workshop / other">
+    <label>Photo of tow truck / driver is in the Photos section (slot “Tow truck / driver”)</label>
+  </div>
+</div>
+
+
+<!-- 8 Review -->
+<div id="s8" class="step hidden">
+  <div class="card">
+    <h2>✅ Review & Generate</h2>
+    <p class="help">Check the summary. Go back to edit any section if needed.</p>
+    <div id="sum" class="sum"></div>
+  </div>
+  <div class="card">
+    <button class="btn btn-g" onclick="makePDF()">📄 Generate PDF Report</button>
+    <button class="btn btn-p" style="margin-top:10px" onclick="doEmail()">📧 Email to riaank@halfwayhoneydew.co.za</button>
+    <button class="btn btn-s" style="margin-top:10px" onclick="save()">💾 Save Progress on this phone</button>
+  </div>
+</div>
+</div>
+
+<div class="nav" id="nav">
+  <button class="btn btn-s" id="back" onclick="back()">← Back</button>
+  <button class="btn btn-p" id="next" onclick="next()">Next →</button>
+</div>
+
+<script>
+const total=9;
+let cur=0;
+const labels=[
+  {id:"w1",l:"Wide scene 1"},{id:"w2",l:"Wide scene 2"},
+  {id:"sur1",l:"Surroundings 1"},{id:"sur2",l:"Surroundings 2"},
+  {id:"od1",l:"Own damage 1"},{id:"od2",l:"Own damage 2"},
+  {id:"od3",l:"Own damage 3"},{id:"od4",l:"Own damage 4"},
+  {id:"opl",l:"Own number plate"},
+  {id:"odisc",l:"Own licence disc"},
+  {id:"odlf",l:"Own DL front"},
+  {id:"odlb",l:"Own DL back"},
+  {id:"td1",l:"Other damage 1"},{id:"td2",l:"Other damage 2"},
+  {id:"td3",l:"Other damage 3"},{id:"td4",l:"Other damage 4"},
+  {id:"tpl",l:"Other number plate"},
+  {id:"tdisc",l:"Other licence disc"},
+  {id:"tdlf",l:"Other DL front"},
+  {id:"tdlb",l:"Other DL back"},
+  {id:"p2dlf",l:"Add. party DL front"},
+  {id:"p2dlb",l:"Add. party DL back"},
+  {id:"odo",l:"Odometer"},
+  {id:"ex",l:"Skids / signs / extra"},
+  {id:"tow",l:"Tow truck / driver"}
+];
+
+let photos={}, parties=[], wits=[], rec=null, chunks=[], blob=null;
+
+function go(s){
+  try {
+    document.querySelectorAll(".step").forEach(function(e){ e.classList.add("hidden"); });
+    var el = document.getElementById("s"+s);
+    if(el) el.classList.remove("hidden");
+    cur = s;
+    var ind = document.getElementById("ind");
+    if(ind) ind.textContent = (s+1) + " / " + total;
+    upd();
+    window.scrollTo(0,0);
+    if(s === 8) buildSum();
+  } catch(err) {
+    alert("Navigation error: " + err.message);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  // Attach start button reliably
+  var startBtn = document.getElementById("startBtn");
+  if(startBtn){
+    startBtn.onclick = function(){ go(1); };
+    startBtn.addEventListener("click", function(){ go(1); });
+    startBtn.addEventListener("touchend", function(e){ e.preventDefault(); go(1); }, {passive:false});
+  }
+
+  // Bottom nav
+  var backBtn = document.getElementById("back");
+  var nextBtn = document.getElementById("next");
+  if(backBtn){
+    backBtn.onclick = function(){ back(); };
+    backBtn.addEventListener("touchend", function(e){ e.preventDefault(); back(); }, {passive:false});
+  }
+  if(nextBtn){
+    nextBtn.onclick = function(){ next(); };
+    nextBtn.addEventListener("touchend", function(e){ e.preventDefault(); next(); }, {passive:false});
+  }
+
+  // GPS buttons
+  var gpsBtn = document.getElementById("gpsBtn");
+  if(gpsBtn){
+    gpsBtn.onclick = function(){ getGPS(); };
+    gpsBtn.addEventListener("touchend", function(e){ e.preventDefault(); getGPS(); }, {passive:false});
+  }
+  var useManualBtn = document.getElementById("useManualBtn");
+  if(useManualBtn){
+    useManualBtn.onclick = function(){ useManualCoords(); };
+  }
+
+
+  var n = new Date();
+  n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+  var dtEl = document.getElementById("dt");
+  if(dtEl) dtEl.value = n.toISOString().slice(0,16);
+
+
+  var g = document.getElementById("pgrid");
+  if(g){
+    labels.forEach(function(p){
+      var d = document.createElement("div");
+      d.className = "photo-slot";
+      d.id = "sl_" + p.id;
+      d.innerHTML = '<div class="lab">' + p.l + '</div><input type="file" accept="image/*" capture="environment" onchange="pic(event,\'' + p.id + '\')">';
+      g.appendChild(d);
+    });
+  }
+  addParty();
+  addWit();
+  load();
+  upd();
+});
+
+function next(){ if(cur < 8) go(cur + 1); }
+function back(){ if(cur > 0) go(cur - 1); }
+function upd(){
+  var n = document.getElementById("nav");
+  var b = document.getElementById("back");
+  var x = document.getElementById("next");
+  if(!n) return;
+  if(cur === 0){ n.classList.add("hidden"); return; }
+  n.classList.remove("hidden");
+  if(b) b.style.visibility = cur === 1 ? "hidden" : "visible";
+  if(x){
+    x.textContent = cur === 8 ? "Done" : "Next →";
+    x.onclick = cur === 8 ? function(){} : next;
+  }
+}
+
+
+function getGPS(){
+  var st = document.getElementById("gpsSt");
+  var btn = document.getElementById("gpsBtn");
+  st.textContent = "Getting location...";
+  st.classList.remove("ok");
+  btn.disabled = true;
+
+  // Check secure context
+  if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    st.textContent = "GPS blocked: page must be HTTPS. Use the manual coordinates fields below, or host the app on an HTTPS link (e.g. Netlify Drop).";
+    btn.disabled = false;
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    st.textContent = "Geolocation not supported on this browser.";
+    btn.disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(p) {
+      var lat = p.coords.latitude.toFixed(6);
+      var lng = p.coords.longitude.toFixed(6);
+      document.getElementById("lat").value = lat;
+      document.getElementById("lng").value = lng;
+      document.getElementById("latManual").value = lat;
+      document.getElementById("lngManual").value = lng;
+      st.textContent = "Captured: " + lat + ", " + lng + " (±" + Math.round(p.coords.accuracy) + "m)";
+      st.classList.add("ok");
+      btn.disabled = false;
+      btn.textContent = "Re-capture";
+    },
+    function(e) {
+      var msg = "Failed: " + e.message;
+      if (e.code === 1) msg = "Permission denied. Allow Location for this site in browser settings, or enter coordinates manually below.";
+      if (e.code === 2) msg = "Position unavailable. Try again or enter coordinates manually.";
+      if (e.code === 3) msg = "Timed out. Try again or enter coordinates manually.";
+      st.textContent = msg;
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+  );
+}
+
+function useManualCoords(){
+  var lat = document.getElementById("latManual").value.trim();
+  var lng = document.getElementById("lngManual").value.trim();
+  var st = document.getElementById("gpsSt");
+  if (!lat || !lng) {
+    st.textContent = "Enter both latitude and longitude.";
+    return;
+  }
+  document.getElementById("lat").value = lat;
+  document.getElementById("lng").value = lng;
+  st.textContent = "Manual: " + lat + ", " + lng;
+  st.classList.add("ok");
+}
+
+
+function pic(e,id){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    photos[id]=ev.target.result;
+    const sl=document.getElementById("sl_"+id);
+    sl.classList.add("has");
+    const old=sl.querySelector("img"); if(old) old.remove();
+    const img=document.createElement("img"); img.src=ev.target.result; sl.appendChild(img);
+  };
+  r.readAsDataURL(f);
+}
+
+function addParty(){
+  if(parties.length >= 3){
+    alert("Maximum of 3 other parties.");
+    return;
+  }
+  const i=parties.length; parties.push({});
+  const c=document.getElementById("parties");
+  const d=document.createElement("div"); d.className="party"; d.id="p_"+i;
+  d.innerHTML=`<strong>Party ${i+1}</strong>
+    <label>Full Name</label><input type="text" oninput="upP(${i},'n',this.value)">
+    <label>ID / Licence No</label><input type="text" oninput="upP(${i},'id',this.value)">
+    <label>Mobile</label><input type="tel" oninput="upP(${i},'ph',this.value)">
+    <label>Vehicle Reg</label><input type="text" style="text-transform:uppercase" oninput="upP(${i},'r',this.value)">
+    <label>Make & Model</label><input type="text" oninput="upP(${i},'m',this.value)">
+    <label>Insurer</label><input type="text" oninput="upP(${i},'ins',this.value)">
+    ${i>0?`<button class="rm" onclick="rmP(${i})">Remove</button>`:""}`;
+  c.appendChild(d);
+  var btn=document.getElementById("addPartyBtn");
+  if(btn && parties.length >= 3) btn.style.display="none";
+}
+
+function upP(i,k,v){ parties[i][k]=v; }
+function rmP(i){
+  parties.splice(i,1);
+  document.getElementById("parties").innerHTML="";
+  const t=[...parties]; parties=[];
+  t.forEach(function(){ addParty(); });
+  var btn=document.getElementById("addPartyBtn");
+  if(btn) btn.style.display="";
+}
+
+
+function addWit(){
+  const i=wits.length; wits.push({});
+  const c=document.getElementById("wits");
+  const d=document.createElement("div"); d.className="wit"; d.id="w_"+i;
+  d.innerHTML=`<strong>Witness ${i+1}</strong>
+    <label>Full Name</label><input type="text" oninput="upW(${i},'n',this.value)">
+    <label>Mobile</label><input type="tel" oninput="upW(${i},'ph',this.value)">
+    ${i>0?`<button class="rm" onclick="rmW(${i})">Remove</button>`:""}`;
+  c.appendChild(d);
+}
+function upW(i,k,v){ wits[i][k]=v; }
+function rmW(i){ wits.splice(i,1); document.getElementById("wits").innerHTML=""; const t=[...wits]; wits=[]; t.forEach(()=>addWit()); }
+
+async function startRec(){
+  var st = document.getElementById("recSt");
+  try{
+    if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+      st.textContent = "Mic blocked: needs HTTPS. Host the app on an HTTPS link (e.g. Netlify Drop) for voice notes.";
+      st.classList.remove("ok","rec");
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      st.textContent = "Microphone not supported on this browser.";
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    rec = new MediaRecorder(stream);
+    chunks = [];
+    rec.ondataavailable = function(e){ chunks.push(e.data); };
+    rec.onstop = function(){
+      blob = new Blob(chunks, { type: "audio/webm" });
+      const u = URL.createObjectURL(blob);
+      const a = document.getElementById("play");
+      a.src = u;
+      a.classList.remove("hidden");
+      const r = new FileReader();
+      r.onload = function(){ document.getElementById("voice").value = r.result; };
+      r.readAsDataURL(blob);
+      st.textContent = "Voice note recorded";
+      st.classList.remove("rec");
+      st.classList.add("ok");
+    };
+    rec.start();
+    document.getElementById("recBtn").classList.add("hidden");
+    document.getElementById("stopBtn").classList.remove("hidden");
+    st.textContent = "Recording...";
+    st.classList.add("rec");
+    st.classList.remove("ok");
+  } catch(e) {
+    var msg = "Mic access failed: " + e.message;
+    if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
+      msg = "Microphone permission denied. Allow mic access for this site in browser settings, or use an HTTPS link.";
+    }
+    st.textContent = msg;
+    st.classList.remove("rec","ok");
+    alert(msg);
+  }
+}
+
+function stopRec(){
+  if(rec){ rec.stop(); rec.stream.getTracks().forEach(t=>t.stop());
+    document.getElementById("recBtn").classList.remove("hidden");
+    document.getElementById("stopBtn").classList.add("hidden");
+    document.getElementById("recSt").classList.remove("rec");
+  }
+}
+
+function buildSum(){
+  const s=document.getElementById("sum");
+  const lat=document.getElementById("lat").value, lng=document.getElementById("lng").value;
+  s.innerHTML=`
+    <h3>Incident</h3><div>${document.getElementById("dt").value||"—"}</div>
+    <div>${document.getElementById("loc").value||"—"}</div>
+    <div>${lat?`GPS: ${lat}, ${lng}`:"No GPS"}</div>
+    <div>Weather: ${document.getElementById("cond").value||"—"} | Incline: ${document.getElementById("incline").value||"—"}</div>
+    <div>Surface: ${document.getElementById("surface").value||"—"}</div>
+    <div>Lighting: ${document.getElementById("lighting").value||"—"}</div>
+    <div>Footage: ${document.getElementById("footage").value||"—"}</div>
+    <h3>Driver & Vehicle</h3>
+    <div>${document.getElementById("name").value}</div>
+    <div>${document.getElementById("phone").value||"—"} • Lic: ${document.getElementById("lic").value||"—"}</div>
+    <div>${document.getElementById("reg").value||"—"} • ${document.getElementById("mm").value||"—"}</div>
+    <div>Odo: ${document.getElementById("odo").value||"—"} km</div>
+    <h3>Photos</h3><div>${Object.keys(photos).length} of ${labels.length} captured</div>
+    <h3>Other Parties</h3><div>${parties.filter(p=>p.n||p.r).length} recorded</div>
+    <h3>Tow</h3>
+    <div>${document.getElementById("towCo").value||"—"} – Driver: ${document.getElementById("towDriver").value||"—"}</div>
+    <div>Storage: ${document.getElementById("storage").value||"—"}</div>
+    <h3>Police</h3>
+    <div>Case: ${document.getElementById("case").value||"—"}</div>
+    <div>Station: ${document.getElementById("stn").value||"—"}</div>`;
+}
+
+
+function makePDF(){
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("PDF library could not load (often happens with local files). You can still use Email Report, or open this app from a web link for full PDF support.");
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 20;
+    const line = function(t, sz, b) {
+      sz = sz || 11; b = b || false;
+      if (y > 275) { doc.addPage(); y = 20; }
+      doc.setFontSize(sz);
+      doc.setFont("helvetica", b ? "bold" : "normal");
+      const ls = doc.splitTextToSize(t || "—", 170);
+      doc.text(ls, 20, y);
+      y += ls.length * (sz * 0.42) + 3;
+    };
+    doc.setFillColor(26, 26, 46);
+    doc.rect(0, 0, 210, 26, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Company Vehicle Accident Capture", 20, 16);
+    doc.setTextColor(0, 0, 0);
+    y = 36;
+    line("INCIDENT REPORT", 13, true);
+    line("Generated: " + new Date().toLocaleString());
+    y += 4;
+    line("1. INCIDENT", 11, true);
+    line("Date/Time: " + (document.getElementById("dt").value || "—"));
+    line("Location: " + (document.getElementById("loc").value || "—"));
+    const lat = document.getElementById("lat").value;
+    const lng = document.getElementById("lng").value;
+    line("GPS: " + (lat ? lat + ", " + lng : "Not captured"));
+    line("Weather: " + (document.getElementById("cond").value || "—") + " | Incline: " + (document.getElementById("incline").value || "—"));
+    line("Road surface: " + (document.getElementById("surface").value || "—"));
+    line("Blind spots: " + (document.getElementById("blind").value || "—"));
+    line("Lighting: " + (document.getElementById("lighting").value || "—"));
+    line("Surroundings: " + (document.getElementById("surround").value || "—"));
+    line("Traffic signs: " + (document.getElementById("signs").value || "—"));
+    line("Dashcam/CCTV: " + (document.getElementById("footage").value || "—") + " – " + (document.getElementById("footageNotes").value || ""));
+    y += 3;
+
+    line("2. DRIVER & VEHICLE", 11, true);
+    line("Name: " + document.getElementById("name").value);
+    line("Phone: " + (document.getElementById("phone").value || "—") + "  Licence: " + (document.getElementById("lic").value || "—"));
+    line("Reg: " + (document.getElementById("reg").value || "—") + "  Model: " + (document.getElementById("mm").value || "—"));
+    line("Odometer: " + (document.getElementById("odo").value || "—") + " km  Policy: " + (document.getElementById("pol").value || "—"));
+    y += 3;
+    line("3. OTHER PARTIES", 11, true);
+    parties.forEach(function(p, i) {
+      if (p.n || p.r) line("P" + (i + 1) + ": " + (p.n || "—") + " | " + (p.ph || "—") + " | " + (p.r || "—") + " | " + (p.m || "—") + " | Ins: " + (p.ins || "—"));
+    });
+    if (parties.every(function(p) { return !p.n && !p.r; })) line("None");
+    y += 3;
+    line("4. WITNESSES", 11, true);
+    wits.forEach(function(w, i) {
+      if (w.n || w.ph) line("W" + (i + 1) + ": " + (w.n || "—") + " – " + (w.ph || "—"));
+    });
+    if (wits.every(function(w) { return !w.n && !w.ph; })) line("None");
+    y += 3;
+    line("5. DESCRIPTION", 11, true);
+    line(document.getElementById("desc").value || "No description");
+    y += 3;
+    line("6. TOW TRUCK", 11, true);
+    line("Company: " + (document.getElementById("towCo").value || "—") + " (Approved: Jensen Towing 011 792 4444 / 086 511 5422)");
+    line("Driver: " + (document.getElementById("towDriver").value || "—") + "  Phone: " + (document.getElementById("towPhone").value || "—"));
+    line("Tow Reg: " + (document.getElementById("towReg").value || "—"));
+    line("Vehicle storage location: " + (document.getElementById("storage").value || "—"));
+    y += 3;
+    line("7. POLICE & INTERNAL", 11, true);
+    line("Station: " + (document.getElementById("stn").value || "—") + "  Case/AR: " + (document.getElementById("case").value || "—"));
+    line("Officer: " + (document.getElementById("off").value || "—"));
+    line("Notified: " + (document.getElementById("not").value || "—") + "  Person: " + (document.getElementById("notp").value || "—"));
+    line("Injuries: " + (document.getElementById("inj").value || "—"));
+    y += 4;
+    line("Photos captured: " + Object.keys(photos).length + " (images follow on next pages)", 10);
+    line("Report prepared with Company Vehicle Accident Capture tool for Halfway / Scottfin purposes.", 9);
+
+    // Add photos on subsequent pages (2 per page)
+    var photoIds = Object.keys(photos);
+    if (photoIds.length > 0) {
+      var labelMap = {};
+      labels.forEach(function(l){ labelMap[l.id] = l.l; });
+      for (var i = 0; i < photoIds.length; i += 2) {
+        doc.addPage();
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("PHOTOS", 20, 18);
+
+        // First image
+        var id1 = photoIds[i];
+        var title1 = labelMap[id1] || id1;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text((i + 1) + ". " + title1, 20, 28);
+        try {
+          doc.addImage(photos[id1], "JPEG", 20, 32, 80, 80);
+        } catch (imgErr) {
+          try { doc.addImage(photos[id1], "PNG", 20, 32, 80, 80); } catch (e2) {
+            doc.text("(Could not embed image)", 20, 50);
+          }
+        }
+
+        // Second image if exists
+        if (i + 1 < photoIds.length) {
+          var id2 = photoIds[i + 1];
+          var title2 = labelMap[id2] || id2;
+          doc.text((i + 2) + ". " + title2, 110, 28);
+          try {
+            doc.addImage(photos[id2], "JPEG", 110, 32, 80, 80);
+          } catch (imgErr) {
+            try { doc.addImage(photos[id2], "PNG", 110, 32, 80, 80); } catch (e2) {
+              doc.text("(Could not embed image)", 110, 50);
+            }
+          }
+        }
+      }
+    }
+
+    const fn = "Accident_" + (document.getElementById("reg").value || "Vehicle") + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+    doc.save(fn);
+    alert("PDF downloaded with " + photoIds.length + " photo(s). Attach it to your email or share it.");
+  } catch (err) {
+    alert("Could not create PDF: " + err.message + "\n\nYou can still use the Email button.");
+  }
+}
+
+
+
+
+function doEmail(){
+  const sub=encodeURIComponent("Company Vehicle Accident Report – "+(document.getElementById("reg").value||"Incident"));
+  let b="Company Vehicle Accident Capture Report%0A%0A";
+  b+="Driver: "+encodeURIComponent(document.getElementById("name").value)+"%0A";
+  b+="Date: "+encodeURIComponent(document.getElementById("dt").value||"")+"%0A";
+  b+="Location: "+encodeURIComponent(document.getElementById("loc").value||"")+"%0A";
+  b+="Vehicle: "+encodeURIComponent(document.getElementById("reg").value||"")+"%0A";
+  b+="Case No: "+encodeURIComponent(document.getElementById("case").value||"")+"%0A%0A";
+  b+="Please find the full PDF report attached (generate it first).%0A%0APrepared with the Accident Capture tool.";
+  window.location.href=`mailto:riaank@halfwayhoneydew.co.za?subject=${sub}&body=${b}`;
+}
+
+function save(){
+  const d={
+    dt:document.getElementById("dt").value, lat:document.getElementById("lat").value, lng:document.getElementById("lng").value,
+    loc:document.getElementById("loc").value, cond:document.getElementById("cond").value,
+    incline:document.getElementById("incline").value, surface:document.getElementById("surface").value, blind:document.getElementById("blind").value,
+    lighting:document.getElementById("lighting").value, surround:document.getElementById("surround").value, signs:document.getElementById("signs").value,
+    footage:document.getElementById("footage").value, footageNotes:document.getElementById("footageNotes").value,
+    name:document.getElementById("name").value, phone:document.getElementById("phone").value, lic:document.getElementById("lic").value,
+    reg:document.getElementById("reg").value, mm:document.getElementById("mm").value, odo:document.getElementById("odo").value, pol:document.getElementById("pol").value,
+    desc:document.getElementById("desc").value, stn:document.getElementById("stn").value, case:document.getElementById("case").value,
+    off:document.getElementById("off").value, not:document.getElementById("not").value, notp:document.getElementById("notp").value, inj:document.getElementById("inj").value,
+    towCo:document.getElementById("towCo").value, towDriver:document.getElementById("towDriver").value, towPhone:document.getElementById("towPhone").value,
+    towReg:document.getElementById("towReg").value, storage:document.getElementById("storage").value,
+    parties, wits, photos, voice:document.getElementById("voice").value, saved:new Date().toISOString()
+
+  };
+  localStorage.setItem("accCap_v1",JSON.stringify(d));
+  alert("Progress saved on this device.");
+}
+function load(){
+  const r=localStorage.getItem("accCap_v1"); if(!r) return;
+  try{
+    const d=JSON.parse(r);
+    ["dt","lat","lng","loc","cond","incline","surface","blind","lighting","surround","signs","footage","footageNotes","name","phone","lic","reg","mm","odo","pol","desc","stn","case","off","not","notp","inj","towCo","towDriver","towPhone","towReg","storage","voice"].forEach(k=>{
+
+      const el=document.getElementById(k); if(el&&d[k]) el.value=d[k];
+    });
+    if(d.lat){ document.getElementById("gpsSt").textContent=`Previously: ${d.lat}, ${d.lng}`; document.getElementById("gpsSt").classList.add("ok"); }
+    if(d.photos){ photos=d.photos; Object.keys(photos).forEach(id=>{
+      const sl=document.getElementById("sl_"+id); if(sl){ sl.classList.add("has"); const img=document.createElement("img"); img.src=photos[id]; sl.appendChild(img); }
+    }); }
+  }catch(e){}
+}
+</script>
+</body>
+</html>
