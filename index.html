@@ -225,18 +225,44 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--p)}
     <p class="help">Stick to facts. Avoid opinions about who was at fault.</p>
     <label>Written Description</label>
     <textarea id="desc" placeholder="I was travelling north on ... when the other vehicle ..."></textarea>
-    <label>Voice Note (optional)</label>
-    <p class="help" style="margin-bottom:6px;">Needs HTTPS link on iPhone. If blocked, rely on the written description.</p>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <button class="btn btn-s" id="recBtn" onclick="startRec()">🎤 Start Recording</button>
-      <button class="btn btn-s hidden" id="stopBtn" onclick="stopRec()">⏹ Stop</button>
-    </div>
-    <div class="gps" id="recSt"></div>
+    <label>Voice Note (recommended method on iPhone)</label>
+    <p class="help" style="margin-bottom:8px;">
+      In-app recording is often blocked on iPhone. Use the native Voice Memos app instead, then come back here.
+    </p>
+    <button class="btn btn-s" type="button" id="openVoiceMemosBtn" style="margin-bottom:10px;">
+      Open Voice Memos app
+    </button>
+    <p class="help" style="margin-bottom:8px;">
+      After recording: tap the share icon in Voice Memos → Save to Files (or share back later).
+    </p>
 
-    <audio id="play" controls class="hidden" style="width:100%;margin-top:10px"></audio>
-    <input type="hidden" id="voice">
+    <label>Did you record a voice memo?</label>
+    <select id="voiceDone">
+      <option value="">Select...</option>
+      <option value="Yes">Yes – recorded in Voice Memos</option>
+      <option value="Yes in-app">Yes – recorded in this app</option>
+      <option value="No">No</option>
+    </select>
+
+    <label>Voice memo notes (filename / where saved)</label>
+    <input type="text" id="voiceNotes" placeholder="e.g. Saved in Files → On My iPhone → Accident folder">
+
+    <label>Attach audio file (optional – if you exported the memo)</label>
+    <input type="file" id="voiceFile" accept="audio/*" style="padding:10px;">
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b);">
+      <label>In-app recorder (fallback – may not work on iPhone)</label>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn btn-s" id="recBtn" type="button">🎤 Try in-app recording</button>
+        <button class="btn btn-s hidden" id="stopBtn" type="button">⏹ Stop</button>
+      </div>
+      <div class="gps" id="recSt"></div>
+      <audio id="play" controls class="hidden" style="width:100%;margin-top:10px"></audio>
+      <input type="hidden" id="voice">
+    </div>
   </div>
 </div>
+
 
 <!-- 7 Police & Tow -->
 <div id="s7" class="step hidden">
@@ -374,6 +400,22 @@ document.addEventListener("DOMContentLoaded", function(){
   if(useManualBtn){
     useManualBtn.onclick = function(){ useManualCoords(); };
   }
+
+  // Voice Memos button
+  var vmBtn = document.getElementById("openVoiceMemosBtn");
+  if(vmBtn){
+    vmBtn.onclick = function(){ openVoiceMemos(); };
+  }
+  // In-app recorder buttons
+  var recBtn = document.getElementById("recBtn");
+  var stopBtn = document.getElementById("stopBtn");
+  if(recBtn){
+    recBtn.onclick = function(){ startRec(); };
+  }
+  if(stopBtn){
+    stopBtn.onclick = function(){ stopRec(); };
+  }
+
 
 
   var n = new Date();
@@ -533,7 +575,30 @@ function addWit(){
 function upW(i,k,v){ wits[i][k]=v; }
 function rmW(i){ wits.splice(i,1); document.getElementById("wits").innerHTML=""; const t=[...wits]; wits=[]; t.forEach(()=>addWit()); }
 
+function openVoiceMemos(){
+  // Try common URL schemes; most will just open the app or fail gracefully
+  var schemes = [
+    "voice-memos://",
+    "voicememos://",
+    "applenotes://",
+    "prefs:root=VOICE_MEMOS"
+  ];
+  var tried = false;
+  for (var i = 0; i < schemes.length; i++) {
+    try {
+      window.location.href = schemes[i];
+      tried = true;
+      break;
+    } catch (e) {}
+  }
+  // Always show instructions as fallback
+  setTimeout(function(){
+    alert("If Voice Memos did not open automatically:\n\n1. Go to your home screen\n2. Open the Voice Memos app\n3. Record your description\n4. Tap the share icon → Save to Files\n5. Come back to this app and mark that you recorded it.");
+  }, 800);
+}
+
 async function startRec(){
+
   var st = document.getElementById("recSt");
   try{
     if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
@@ -678,7 +743,9 @@ function makePDF(){
     y += 3;
     line("5. DESCRIPTION", 11, true);
     line(document.getElementById("desc").value || "No description");
+    line("Voice memo: " + (document.getElementById("voiceDone").value || "—") + " – " + (document.getElementById("voiceNotes").value || ""));
     y += 3;
+
     line("6. TOW TRUCK", 11, true);
     line("Company: " + (document.getElementById("towCo").value || "—") + " (Approved: Jensen Towing 011 792 4444 / 086 511 5422)");
     line("Driver: " + (document.getElementById("towDriver").value || "—") + "  Phone: " + (document.getElementById("towPhone").value || "—"));
@@ -771,7 +838,12 @@ function save(){
     off:document.getElementById("off").value, not:document.getElementById("not").value, notp:document.getElementById("notp").value, inj:document.getElementById("inj").value,
     towCo:document.getElementById("towCo").value, towDriver:document.getElementById("towDriver").value, towPhone:document.getElementById("towPhone").value,
     towReg:document.getElementById("towReg").value, storage:document.getElementById("storage").value,
-    parties, wits, photos, voice:document.getElementById("voice").value, saved:new Date().toISOString()
+    parties, wits, photos,
+    voice:document.getElementById("voice").value,
+    voiceDone:document.getElementById("voiceDone").value,
+    voiceNotes:document.getElementById("voiceNotes").value,
+    saved:new Date().toISOString()
+
 
   };
   localStorage.setItem("accCap_v1",JSON.stringify(d));
@@ -781,7 +853,8 @@ function load(){
   const r=localStorage.getItem("accCap_v1"); if(!r) return;
   try{
     const d=JSON.parse(r);
-    ["dt","lat","lng","loc","cond","incline","surface","blind","lighting","surround","signs","footage","footageNotes","name","phone","lic","reg","mm","odo","pol","desc","stn","case","off","not","notp","inj","towCo","towDriver","towPhone","towReg","storage","voice"].forEach(k=>{
+    ["dt","lat","lng","loc","cond","incline","surface","blind","lighting","surround","signs","footage","footageNotes","name","phone","lic","reg","mm","odo","pol","desc","stn","case","off","not","notp","inj","towCo","towDriver","towPhone","towReg","storage","voice","voiceDone","voiceNotes"].forEach(k=>{
+
 
       const el=document.getElementById(k); if(el&&d[k]) el.value=d[k];
     });
